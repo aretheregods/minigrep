@@ -9,55 +9,52 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(args: &[String]) -> Result<Config, &'static str> {
-        if args.len() == 2 {
-            return Err("Missing file argument");
-        } else if args.len() == 1 {
-            return Err("Missing query and file arguments");
-        } else {
-            let query = args[1].clone();
-            let filename = args[2].clone();
+    pub fn new(mut args: std::env::Args) -> Result<Config, &'static str> {
+        args.next();
 
-            let mut insensitive = false;
-            let envvar = env::var("insensitive").is_err();
+        let query = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Missing query argument"),
+        };
 
-            if !envvar {
-                insensitive = !&envvar;
-            } else if args.len() == 4 
-            && (
-                args[3].to_lowercase() == "insensitive"
-                || args[3].to_lowercase() == "--i"
-            ) {
-                insensitive = true;
-            }
+        let filename = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Missing file argument"),
+        };
 
-            Ok(Config { query, filename, insensitive })
-        }
+        let env_var_undefined = env::var("insensitive").is_err();
+
+        let insensitive = match args.next() {
+            Some(arg) => {
+                if !env_var_undefined {
+                    !&env_var_undefined
+                } else if arg.to_lowercase() == "insensitive"
+                        || arg.to_lowercase() == "--i" 
+                {
+                    true
+                } else {
+                    false
+                }
+            },
+            None => false,
+        };
+
+        Ok(Config { query, filename, insensitive })
     }
 }
 
 pub fn search<'a>(query: &str, file_contents: &'a str) -> Vec<&'a str> {
-    let mut results = vec![];
-
-    for line in file_contents.lines() {
-        if line.contains(query) {
-            results.push(line);
-        }
-    }
-
-    results
+    file_contents
+        .lines()
+        .filter(|line| line.contains(query))
+        .collect()
 }
 
 pub fn search_case_insensitive<'a>(query: &str, file_contents: &'a str) -> Vec<&'a str> {
-    let mut results = vec![];
-
-    for line in file_contents.lines() {
-        if line.to_lowercase().contains(&query.to_lowercase()) {
-            results.push(line);
-        }
-    }
-
-    results
+    file_contents
+        .lines()
+        .filter(|line| line.to_lowercase().contains(&query.to_lowercase()))
+        .collect()
 }
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
