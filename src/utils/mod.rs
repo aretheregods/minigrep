@@ -1,3 +1,4 @@
+use std::env;
 use std::error::Error;
 use std::fs;
 
@@ -18,8 +19,11 @@ impl Config {
             let filename = args[2].clone();
 
             let mut insensitive = false;
+            let envvar = env::var("insensitive").is_err();
 
-            if args.len() == 4 
+            if !envvar {
+                insensitive = !&envvar;
+            } else if args.len() == 4 
             && (
                 args[3].to_lowercase() == "insensitive"
                 || args[3].to_lowercase() == "--i"
