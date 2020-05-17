@@ -26,9 +26,8 @@ impl Config {
 
         let insensitive = match args.next() {
             Some(arg) => {
-                if !env_var_undefined {
-                    !&env_var_undefined
-                } else if arg.to_lowercase() == "insensitive"
+                if !env_var_undefined 
+                        || arg.to_lowercase() == "insensitive"
                         || arg.to_lowercase() == "--i" 
                 {
                     true
@@ -36,7 +35,13 @@ impl Config {
                     false
                 }
             },
-            None => false,
+            None => {
+                if !env_var_undefined {
+                    true
+                } else {
+                    false
+                }
+            },
         };
 
         Ok(Config { query, filename, insensitive })
