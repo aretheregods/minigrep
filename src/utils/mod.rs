@@ -4,6 +4,7 @@ use std::fs;
 pub struct Config {
     pub query: String,
     pub filename: String,
+    pub insensitive: bool,
 }
 
 impl Config {
@@ -16,12 +17,34 @@ impl Config {
             let query = args[1].clone();
             let filename = args[2].clone();
 
-            Ok(Config { query, filename })
+            let mut insensitive = false;
+
+            if args.len() == 4 
+            && (
+                args[3].to_lowercase() == "insensitive"
+                || args[3].to_lowercase() == "--i"
+            ) {
+                insensitive = true;
+            }
+
+            Ok(Config { query, filename, insensitive })
         }
     }
 }
 
 pub fn search<'a>(query: &str, file_contents: &'a str) -> Vec<&'a str> {
+    let mut results = vec![];
+
+    for line in file_contents.lines() {
+        if line.contains(query) {
+            results.push(line);
+        }
+    }
+
+    results
+}
+
+pub fn search_case_insensitive<'a>(query: &str, file_contents: &'a str) -> Vec<&'a str> {
     let mut results = vec![];
 
     for line in file_contents.lines() {
@@ -36,7 +59,13 @@ pub fn search<'a>(query: &str, file_contents: &'a str) -> Vec<&'a str> {
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let contents = fs::read_to_string(config.filename)?;
 
-    for line in search(&config.query, &contents) {
+    let results = if config.insensitive {
+        search_case_insensitive(&config.query, &contents)
+    } else {
+        search(&config.query, &contents)
+    };
+
+    for line in results {
         println!("{}", line);
     }
 
